@@ -7,12 +7,20 @@ from algo import gotypes
 from algo.utils import print_board, print_move, point_from_coords, init_location, init_axes
 from six.moves import input
 
+def init_overlay(self,frame):
+    #cv2.line(img=frame, pt1=(72, 72), pt2=(510  , 72), color=(255, 0, 0), thickness=1, lineType=8, shift=0)
+    #cv2.line(img=frame, pt1=(72, 72), pt2=(72  , 510), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
+    y = [x for x in range(72,510,54)]
+    for num in y:
+        cv2.line(img=frame, pt1=(num, 72), pt2=(num , 510), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
+        cv2.line(img=frame, pt1=(72, num), pt2=(510, num), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
 class Mythread (threading.Thread):
     def __init__(self, threadID, name, img):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.img = img
+
     def run(self):
         cap = cv2.VideoCapture(0)
         while(1):
@@ -20,6 +28,14 @@ class Mythread (threading.Thread):
             ret, frame = cap.read()
             frame = cv2.flip(frame, 1)
             frame = cv2.resize(frame, (578,578))
+            #overlay  = cv2.imread('algo/board_overlay.png')
+
+            #print(frame.shape)
+            #print(overlay.shape)
+            #frame = cv2.addWeighted(frame,0.5,overlay,0.5,0)
+
+
+            init_overlay(self, frame)
             img_w_coords = np.concatenate((img_w_coords, frame), axis=1)
             cv2.imshow('frame',img_w_coords)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -36,6 +52,7 @@ def main():
     img = cv2.imread('algo/gameboard.png')
     img = init_axes(img)
     game_state_img = img_w_coords = img
+
     #ret, frame = cap.read()
     # Our operations on the frame come here
     #frame = cv2.flip( frame, 1)
