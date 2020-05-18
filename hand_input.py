@@ -3,14 +3,16 @@ import numpy as np
 import math
 
 def index_loc(img):
-    width,height = img.shape
+    height,width = img.shape
     lowest_row = 1000
     col_save = None
-    for col in range(width):
-        for row in range(height):
+    reached = False
+    for row in range(height):
+        for col in range(width):
             if np.array_equal(255, img[row][col]) and row < lowest_row:
                 lowest_row = row
                 col_save = col
+                return (lowest_row,col_save) #(y,x)
     return (lowest_row,col_save)
 def categorize(img_src, img_copy):
     src = cv2.resize(img_src, (578,578))
@@ -56,8 +58,9 @@ def categorize(img_src, img_copy):
     # calculate moments of binary image
     M = cv2.moments(thresh)
     # calculate x,y coordinate of centroid
-    cX = int(M["m10"] / M["m00"])
-    cY = int(M["m01"] / M["m00"])
+    if M["m00"] != 0:
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
 
     # put text and highlight the center
     cv2.circle(src, (cX, cY), 5, (25, 25, 112), -1)
@@ -146,14 +149,18 @@ def categorize(img_src, img_copy):
     area_contour = cv2.contourArea(cnt)
     hull = cv2.convexHull(cnt)
     area_hull = cv2.contourArea(hull)
-    area_ratio = (((area_hull-area_contour)/area_contour) *100)
+    if area_contour != 0:
+        area_ratio = (((area_hull-area_contour)/area_contour) *100)
 
     drawing = np.zeros(copy.shape,np.uint8)
     hand_outline = drawing.copy()
     cv2.drawContours(hand_outline,[cnt],0,(255,255,255),0)
     cv2.drawContours(drawing,[hull],0,(255,255,255),0)
-    finger_col,finger_row = index_loc(drawing)
-
+    finger_row,finger_col = index_loc(drawing)
+    #cv2.rectangle(drawing,(finger_row-10,finger_col-10),(finger_row+10,finger_col+10), 255,1)
+    #frame  = game_img.copy()
+    #cv2.imshow("tst", drawing)
+    #cv2.waitKey(0)
     hull = cv2.convexHull(cnt,returnPoints = False)
     defects = cv2.convexityDefects(cnt,hull)
 
@@ -194,9 +201,9 @@ def categorize(img_src, img_copy):
     cv2.rectangle(game_img,(finger_col-10,finger_row-10),(finger_col+10,finger_row+10), (255, 255, 255),1)
     frame  = game_img.copy()
     #cv2.imwrite(result, copy) Uncomment this if you wish to have the final labeled image written to the directory
-    return (hand, (finger_col, finger_row), frame)
-if __name__ == "__main__":
-    i = "algo/One.jpg"
-    src = cv2.imread(i,cv2.IMREAD_UNCHANGED)
-    copy = cv2.imread(i, cv2.IMREAD_GRAYSCALE)
-    hand,quadrant = categorize(src, copy)
+    return (hand, (finger_row, finger_col), frame)
+#if __name__ == "__main__":
+    #i = "algo/One.jpg"
+    #src = cv2.imread(i,cv2.IMREAD_UNCHANGED)
+    #copy = cv2.imread(i, cv2.IMREAD_GRAYSCALE)
+    #hand,quadrant = categorize(src, copy)
