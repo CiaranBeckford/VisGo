@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import threading
+import time
 from algo import agent
 from algo import goboard
 from algo import gotypes
@@ -8,6 +9,9 @@ from algo.utils import print_board, print_move, point_from_coords, init_location
 from six.moves import input
 from hand_input import categorize
 
+def get_coord(self):
+    #print(self.coords)
+    return self.coords
 def init_overlay(self,frame):
     #cv2.line(img=frame, pt1=(72, 72), pt2=(510  , 72), color=(255, 0, 0), thickness=1, lineType=8, shift=0)
     #cv2.line(img=frame, pt1=(72, 72), pt2=(72  , 510), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
@@ -16,12 +20,17 @@ def init_overlay(self,frame):
         cv2.line(img=frame, pt1=(num, 72), pt2=(num , 510), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
         cv2.line(img=frame, pt1=(72, num), pt2=(510, num), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
 class Mythread (threading.Thread):
-    def __init__(self, threadID, name, img):
+    def __init__(self, threadID, name, img, coords):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.img = img
+        self.coords = coords
+    def get_game_state_img(self,img):
+        self.img = img
 
+    def set_coords(self, coords):
+        self.coords = coords
     def run(self):
         cap = cv2.VideoCapture(0)
         while(1):
@@ -32,16 +41,18 @@ class Mythread (threading.Thread):
             hand,coords,frame = categorize(frame, frame_copy)
             frame = cv2.flip(frame, 1)
             frame = cv2.resize(frame, (578,578))
-
+            self.set_coords(coords)
             init_overlay(self, frame)
             img_w_coords = np.concatenate((img_w_coords, frame), axis=1)
             cv2.imshow('frame',img_w_coords)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-    def get_game_state_img(self,img):
-        self.img = img
 
 
+def alpha_intersect(coords, inv_map):
+    for i in inv_map:
+        if i[0]-10<=coords[0]<=i[0]+10 and i[1]-10<=coords[1]<=i[1]+10:
+            return inv_map[i]
 def main():
 
     board_size = 9
@@ -56,13 +67,20 @@ def main():
     #frame = cv2.flip( frame, 1)
     #frame = cv2.resize(frame, (578,578))
     matrix = init_location()
+    inv_map = {v: k for k, v in matrix.items()}
     #img_w_coords = np.concatenate((img_w_coords, frame), axis=1)
-    thread1 = Mythread(1, "videoThread", img_w_coords)
+    thread1 = Mythread(1, "videoThread", img_w_coords, (0,0))
     start_ = False
     thread1.start()
     while not game.is_over():
             #if start_ == False:
             thread1.get_game_state_img(img_w_coords)
+            coords = get_coord(thread1)
+            #print(alpha_intersect(coords,inv_map))
+            #time.sleep(1)
+            #print(a_row,a_col)
+            print(coords)
+            time.sleep(1)
             print(chr(27) + "[2J")
             print_board(game.board)
             if game.next_player == gotypes.Player.black:
@@ -75,6 +93,6 @@ def main():
             game = game.apply_move(game.next_player, move)
             start_ = True
     cap.release()
-    thread.join()
+    thread1.join()
 if __name__ == '__main__':
     main()
