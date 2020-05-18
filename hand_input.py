@@ -2,9 +2,20 @@ import cv2
 import numpy as np
 import math
 
+def index_loc(img):
+    width,height = img.shape
+    lowest_row = 1000
+    col_save = None
+    for col in range(width):
+        for row in range(height):
+            if np.array_equal(255, img[row][col]) and row < lowest_row:
+                lowest_row = row
+                col_save = col
+    return (lowest_row,col_save)
 def categorize(img_src, img_copy):
-    src = img_src
-    copy = img_copy
+    src = cv2.resize(img_src, (578,578))
+    game_img = src.copy()
+    copy = cv2.resize(img_copy, (578,578))
 
     '''
     Citation for Code Below:
@@ -138,27 +149,29 @@ def categorize(img_src, img_copy):
     area_ratio = (((area_hull-area_contour)/area_contour) *100)
 
     drawing = np.zeros(copy.shape,np.uint8)
-    cv2.drawContours(drawing,[cnt],0,(0,255,0),0)
-    cv2.drawContours(drawing,[hull],0,(0,0,255),0)
+    hand_outline = drawing.copy()
+    cv2.drawContours(hand_outline,[cnt],0,(255,255,255),0)
+    cv2.drawContours(drawing,[hull],0,(255,255,255),0)
+    finger_col,finger_row = index_loc(drawing)
+
     hull = cv2.convexHull(cnt,returnPoints = False)
     defects = cv2.convexityDefects(cnt,hull)
+
     count_defects = 0
     cv2.drawContours(thresh1, contours, -1, (0,255,0), 3)
-
     for i in range(defects.shape[0]):
         s,e,f,d = defects[i,0]
         start = tuple(cnt[s][0])
         end = tuple(cnt[e][0])
         far = tuple(cnt[f][0])
+        #cv2.circle(copy,far,1,[0,0,0],-1)
         a = math.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
         b = math.sqrt((far[0] - start[0])**2 + (far[1] - start[1])**2)
         c = math.sqrt((end[0] - far[0])**2 + (end[1] - far[1])**2)
         angle = math.acos((b**2 + c**2 - a**2)/(2*b*c)) * 57
         if angle <= 90:
             count_defects += 1
-            cv2.circle(copy,far,1,[0,0,255],-1)
-        cv2.line(copy,start,end,[0,255,0],2)
-
+            cv2.circle(copy,far,1,[255,255,255],-1)
     hand = None
     #counts number of defects to return hand shape
     if count_defects == 0:
@@ -178,8 +191,10 @@ def categorize(img_src, img_copy):
     result = "{}".format((hand, quadrant))
     cv2.putText(copy,result, (20,400), cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255, 255, 255), 2)
     result = result+".jpg"
+    cv2.rectangle(game_img,(finger_col-10,finger_row-10),(finger_col+10,finger_row+10), (255, 255, 255),1)
+    frame  = game_img.copy()
     #cv2.imwrite(result, copy) Uncomment this if you wish to have the final labeled image written to the directory
-    return (hand, quadrant)
+    return (hand, (finger_col, finger_row), frame)
 if __name__ == "__main__":
     i = "algo/One.jpg"
     src = cv2.imread(i,cv2.IMREAD_UNCHANGED)

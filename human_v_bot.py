@@ -6,11 +6,12 @@ from algo import goboard
 from algo import gotypes
 from algo.utils import print_board, print_move, point_from_coords, init_location, init_axes
 from six.moves import input
+from hand_input import categorize
 
 def init_overlay(self,frame):
     #cv2.line(img=frame, pt1=(72, 72), pt2=(510  , 72), color=(255, 0, 0), thickness=1, lineType=8, shift=0)
     #cv2.line(img=frame, pt1=(72, 72), pt2=(72  , 510), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
-    y = [x for x in range(72,510,54)]
+    y = [x for x in range(72,505,54)]
     for num in y:
         cv2.line(img=frame, pt1=(num, 72), pt2=(num , 510), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
         cv2.line(img=frame, pt1=(72, num), pt2=(510, num), color=(0, 255, 0), thickness=1, lineType=8, shift=0)
@@ -25,15 +26,12 @@ class Mythread (threading.Thread):
         cap = cv2.VideoCapture(0)
         while(1):
             img_w_coords = self.img
-            ret, frame = cap.read()
+            #ret, frame = cap.read()
+            frame = cv2.imread("algo/One.jpg", cv2.IMREAD_UNCHANGED)
+            frame_copy = cv2.imread("algo/One.jpg", cv2.IMREAD_GRAYSCALE)
+            hand,coords,frame = categorize(frame, frame_copy)
             frame = cv2.flip(frame, 1)
             frame = cv2.resize(frame, (578,578))
-            #overlay  = cv2.imread('algo/board_overlay.png')
-
-            #print(frame.shape)
-            #print(overlay.shape)
-            #frame = cv2.addWeighted(frame,0.5,overlay,0.5,0)
-
 
             init_overlay(self, frame)
             img_w_coords = np.concatenate((img_w_coords, frame), axis=1)
